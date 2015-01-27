@@ -1,0 +1,5 @@
+# Please adapt this file and copy it to Makefile.vars
+
+# Implementations of some relevant ontologies
+RDFS = path/to/rdfs.rdfs
+OWL = path/to/owl2.owl

@@ -1,0 +1,45 @@
+# some OWL and RDFS inference rules, which have been hard-coded here
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# inverses (one direction)
+{ ?s ?p ?o .
+  ?q owl:inverseOf ?p }
+=> { ?o ?q ?s } .
+
+# inverses (other direction)
+{ ?s ?p ?o .
+  ?p owl:inverseOf ?q }
+=> { ?o ?q ?s } .
+
+# range → domain
+{ ?p rdfs:range ?r .
+  ?p owl:inverseOf ?q }
+=> { ?q rdfs:domain ?r } .
+
+# domain → range
+{ ?p rdfs:domain ?r .
+  ?p owl:inverseOf ?q }
+=> { ?q rdfs:range ?r } .
+
+# subPropertyOf
+{ ?s ?p ?o .
+  ?p rdfs:subPropertyOf ?q }
+=> { ?s ?q ?o } .
+
+# subClassOf → type (in an extensional sense this also handles transitivity of subClassOf
+{ ?x a [ rdfs:subClassOf ?c ] }
+=> { ?x a ?c } .
+
+## Disabled for efficiency
+# # transitivity of subClassOf
+# rdfs:subClassOf a owl:TransitiveProperty .
+
+# # transitivity of subPropertyOf
+# rdfs:subPropertyOf a owl:TransitiveProperty .
+
+# # transitive properties
+# { ?x ?p [ ?p ?z ] .
+#   ?p a owl:TransitiveProperty }
+# => { ?x ?p ?z } .

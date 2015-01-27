@@ -1,0 +1,15 @@
+# Please adapt this file and copy it to Makefile.vars
+
+LIB                    = $(BASE)/lib
+
+# local copy of the directory where RDF and other stuff gets deployed
+DEPLOY_DIR             = $(BASE)/deploy
+DEPLOY_DEST            = gemini.informatik.uni-bremen.de:/home/www/agbkb/forschung/formal_methods/CoFI/hets/dol
+
+# basic commands
+CP    = cp --update
+MKDIR = mkdir -p
+
+# Local Variables:
+# mode: makefile-gmake
+# End:

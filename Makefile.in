@@ -1,0 +1,8 @@
+all: $(ALL)
+	@for dir in $(SYNCDIRS); do $(MAKE) -C $$dir all; done
+
+.PHONY : all clean
+
+# Local Variables:
+# mode: makefile-gmake
+# End:

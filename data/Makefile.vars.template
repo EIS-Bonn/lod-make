@@ -1,0 +1,16 @@
+# Please adapt this file and copy it to Makefile.vars
+
+# files to deploy
+DATASET              = data.rdf
+DEPLOY_OTHER         = data-expanded.rdf ../deploy/.files
+
+# dataset namespace
+DATA_NS              = http://ceur-ws.org/
+
+# vocabularies
+# DATA_VOCABS          = ../vocab/dol-rdf.owl
+# OTHER_VOCABS         = /mnt/data/doc/kwarc/ontologies/dc/dcterms.rdfs /mnt/data/doc/kwarc/ontologies/skos/skos-core.owl
+
+# Local Variables:
+# mode: makefile-gmake
+# End:
