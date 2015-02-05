@@ -2,8 +2,10 @@ BASE = .
 SYNCDIRS = lib data vocab
 ALL = 
 
+include $(BASE)/Makefile.vars
+
 sync-deploy: deploy
-	rsync -avzc --delete deploy/. $(DEPLOY_DEST)
+	rsync -avzc $(RSYNC_PARAMS) deploy/. $(DEPLOY_DEST)
 
 clean:
 	rm -f *~ ; \
@@ -11,5 +13,4 @@ clean:
 
 .PHONY: sync-deploy
 
-include $(BASE)/Makefile.vars
 include $(BASE)/Makefile.in
