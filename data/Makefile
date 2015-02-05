@@ -80,7 +80,7 @@ $(DEPLOY_DIR)/.dirs: resource-uris
 # For each resource, …
 # 1. read all triples having this resource as a subject
 # 2. output them to a self-contained RDF/XML file named after the resource
-$(DEPLOY_DIR)/.files: resource-uris $(DEPLOY_DIR)/.dirs
+$(DEPLOY_DIR): resource-uris $(DEPLOY_DIR)/.dirs
 	function do_split() { \
 		resource_pattern=$$1 ; \
 		main_resource=$$2 ; \
