@@ -1,0 +1,61 @@
+#!/bin/bash
+
+DATA_NS="$1"
+DEPLOY_DIR="$2"
+
+SUBJECT_RE="<${DATA_NS//./\\.}(.*/)?([^/#]+)?.*>"
+BLANK_NODE_URI_RE="<.*#(_:[^#]+)>"
+
+# clean up when this script terminates
+trap "rm ntriples.fifo; echo 3>&-" EXIT
+
+# read sorted N-Triples from standard input
+while read -r subject predicate object rest
+do
+    # once we find a new subject in the data namespace …
+    if [[ -z ${old_subject+unset} || $subject != $old_subject ]]
+    then
+	old_subject="$subject"
+        # … we check whether it matches the SUBJECT_RE regular expression
+	if [[ $subject =~ $SUBJECT_RE ]]
+        then
+	    directory="${BASH_REMATCH[1]}"
+	    file="${BASH_REMATCH[2]}"
+	    if [[ -z ${old_directory+unset} || $directory != $old_directory ]]
+            then
+		old_directory="$directory"
+		echo $directory
+		abs_dir=$DEPLOY_DIR/$directory
+		mkdir -p $abs_dir
+		cp .htaccess $abs_dir
+	    fi
+	    if [[ -z $file ]]
+            then
+                # create index.rdf if filename is empty (this only works when there is no resource named "index")
+                file="index"
+            else
+                # unescape URIs (which are always escaped in the N-Triples input)
+                file="$(perl -MURI::Escape -e 'print uri_unescape($ARGV[0]);' "$file")"
+            fi
+            # open a new output file for the following triples
+	    if [[ -z ${old_file+unset} || "${directory}${file}" != "$old_file" ]]
+            then
+               old_file="${directory}${file}"
+               if [[ ! -p ntriples.fifo ]]
+               then
+	           mkfifo ntriples.fifo
+               else
+                   exec 3>&-
+                   wait %cwm
+               fi
+	       cwm --n3 --rdf < ntriples.fifo > "${DEPLOY_DIR}/${directory}${file}.rdf" &
+	       exec 3>ntriples.fifo
+            fi
+        fi
+    fi
+    # rewrite blank nodes that have been escaped as <URI#_:id> back into _:id
+    [[ $subject =~ $BLANK_NODE_URI_RE ]] && subject="${BASH_REMATCH[1]}"
+    [[ $object =~ $BLANK_NODE_URI_RE ]] && object="${BASH_REMATCH[1]}"
+    # write one triple into the pipe that converts N-Triples to RDF/XML
+    echo "$subject $predicate $object $rest" >&3
+done

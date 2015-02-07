@@ -54,49 +54,20 @@ $(DATASET:.rdf=-with-tbox.rdf): $(EXPANDED_DATASET) $(DATA_VOCABS)
 %-expanded.ttl: %-expanded.nt
 	cwm --n3=tv $< > $@
 
-# Output all distinct subject URIs (and blank node IDs) that occur in the dataset.
+# Generate all split files.  Put fragment URIs into their "parent" files.
+# For each resource, …
+# 1. read all triples having this resource as a subject
+# 2. output them to a self-contained RDF/XML file named after the resource
+# This implementation requires the input to be sorted, which is the case when using cwm.
+$(DEPLOY_DIR): $(EXPANDED_DATASET)
+	../lib/split-dataset $(DATA_NS) $(DEPLOY_DIR) < $<
+
+# For testing: output all distinct subject URIs that occur in the dataset.
 resource-uris: $(EXPANDED_DATASET)
 	awk '{print gensub("<([^>]+)>", "\\1", 1, $$1)}' $< \
 	| sort \
 	| uniq \
 	> $@
-
-# Make sure that all directories exist in whose paths we have resources.
-# Skip any namespaces we are not interested in deploying.
-$(DEPLOY_DIR)/.dirs: resource-uris
-	perl -lne 'print $$1 if m@^$(subst .,\.,$(DATA_NS))((?:[^/]+/)*)[^/]+@' $< \
-	| sort \
-	| uniq \
-	| while read directory ; do \
-		echo $$directory ; \
-		target=$(DEPLOY_DIR)/$$directory ; \
-		$(MKDIR) $$target ; \
-		cp .htaccess $$target ; \
-	  done && \
-	touch $@
-
-# Generate all split files.  Put fragment URIs into their "parent" files.
-# The "uniq" below works because the file is still dorted.
-# For each resource, …
-# 1. read all triples having this resource as a subject
-# 2. output them to a self-contained RDF/XML file named after the resource
-$(DEPLOY_DIR): resource-uris $(DEPLOY_DIR)/.dirs
-	function do_split() { \
-		resource_pattern=$$1 ; \
-		main_resource=$$2 ; \
-		out_file=$(DEPLOY_DIR)/$${main_resource#$(DATA_NS)} ; \
-		[[ -d $$out_file ]] && out_file=$${out_file}/index ; \
-		grep -E "$${resource_pattern}" $(EXPANDED_DATASET) \
-		| cwm --n3 --rdf $(CWM_DEFAULT_ARGS) \
-		> $${out_file}.rdf ; \
-	} ; \
-	sed 's/#.*//g' $< \
-	| uniq \
-	| while read resource ; do \
-		echo $$resource ; \
-		do_split "^<$$resource(#.*)?>" $$resource ; \
-	done && \
-	touch $@
 
 clean: clean-deploy
 	rm -rf $(EXPANDED_DATASET)
