@@ -37,17 +37,32 @@ $(DATASET:.rdf=-with-tbox.rdf): $(EXPANDED_DATASET) $(DATA_VOCABS)
 #    --think                          # apply the inference rules until they lead to no more expansions
 #    --ntriples                       # create N-Triples output for easy linewise post-processing
 #    $(CWM_DEFAULT_ARGS)
-# 2. remove leading whilespace
-# 3. filter out any triples whose subjects are not from the namespace of this dataset.  This includes blank nodes, which are just used for editorial comments so far
-# 4. filter out triples containing blank nodes in any component.  Many blank nodes are not relevant for the dataset (e.g. artifacts from the RDF serialization of the OWL ontology, editorial comments, etc.), and those, that are, are not supported by our approach.
-# 5. filter out triples with certain annotation properties (here: editorial comments)
-# 
-# TODO blank nodes should actually be supported (and merged into their non-blank predecessors in the graph)
+# 2. remove leading whitespace
+# 3. skip triples whose subjects are neither blank nodes nor URIs from the namespace of this dataset.  This includes, e.g., artefacts from vocabularies loaded for inferencing purposes.
+# 4. skip triples that contain URIs matching a given regular expression (e.g. URIs from a vocabulary only used for maintenance-related annotations in the source)
+# 4. escape blank node IDs _:id, which occur as an object to a subject from our dataset, into <subjectURI#_:id>
+# 5. remove remaining blank nodes
+
 %-expanded.nt: %.ttl $(VOCAB_INFERENCES) $(OWL_INFERENCES)
-	cwm --n3 $< $(if,$(DATA_VOCABS) $(OTHER_VOCABS),--rdf $(DATA_VOCABS) $(OTHER_VOCABS)) --n3 $(VOCAB_INFERENCES) $(OWL_INFERENCES) --think --ntriples $(CWM_DEFAULT_ARGS) \
+	declare -A uri ; \
+	cwm --n3 $< $(if $(DATA_VOCABS) $(OTHER_VOCABS),--rdf $(DATA_VOCABS) $(OTHER_VOCABS)) --n3 $(VOCAB_INFERENCES) $(OWL_INFERENCES) --think --ntriples $(CWM_DEFAULT_ARGS) \
 	| perl -pe 's/^[[:space:]]*//' \
-        | grep '^<$(subst .,\.,$(DATA_NS))' \
-	| grep -vE '^<[^>]+>[^<]+(_:|<http://example\.org/todo#)' \
+	| grep -E '^(<$(subst .,\.,$(DATA_NS))|_:)' \
+	$(if $(SKIP_NS),| grep -vE '<$(subst .,\.,$(SKIP_NS))') \
+	| sort -r \
+	| while read -r subject predicate object rest ; do \
+		if [[ $$object == _:* ]] ; then \
+			object_uri="$${subject%>}#$$object>" ; \
+			uri["$$object"]="$$object_uri" ; \
+			object="$$object_uri" ; \
+		fi ; \
+		if [[ $$subject == _:* ]] ; then \
+			subject=$${uri[$$subject]} ; \
+			[[ -z $$subject ]] && continue ; \
+		fi ; \
+		echo "$$subject $$predicate $$object $$rest" ; \
+	done \
+	| sort \
 	> $@
 
 # convert expanded N-Triples datasets to Turtle

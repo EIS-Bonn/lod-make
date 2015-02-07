@@ -6,6 +6,7 @@ DEPLOY_OTHER         = data-expanded.rdf ../deploy/.files
 
 # dataset namespace
 DATA_NS              = http://ceur-ws.org/
+SKIP_NS              = http://example.org/todo#
 
 # vocabularies
 # DATA_VOCABS          = ../vocab/dol-rdf.owl
